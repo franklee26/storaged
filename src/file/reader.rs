@@ -3,22 +3,11 @@ use std::{
     io::{Error, Read, Result},
 };
 
-use crate::{set_some_builder_field, utils::common::bytes_to_str};
-
-/// `ChunkReaderHandler` provides the call back that the reader will
-/// execute during read operations.
-pub trait ChunkReaderHandler {
-    fn handle(&self, bytes: &[u8]) -> Result<()>;
-}
-
-struct NoOpHandler;
-
-impl ChunkReaderHandler for NoOpHandler {
-    fn handle(&self, _bytes: &[u8]) -> Result<()> {
-        println!("No op!");
-        Ok(())
-    }
-}
+use crate::{
+    chunks::{ChunkReader, NoOpHandler},
+    set_some_builder_field,
+    utils::common::bytes_to_str,
+};
 
 /// Reader *reads* data into Storaged. Becase the file can be very
 /// large, it does not make sense for `Reader` to load all of this
@@ -28,7 +17,7 @@ pub struct Reader {
     file_name: String,
     chunk_size: u16,
     process_async: bool,
-    chunk_handler: Box<dyn ChunkReaderHandler>,
+    chunk_handler: Box<dyn ChunkReader>,
 }
 
 impl Reader {
@@ -117,7 +106,7 @@ impl ReaderBuilder {
             ));
         }
 
-        let handler: Box<dyn ChunkReaderHandler> = match self.reader_type.unwrap() {
+        let handler: Box<dyn ChunkReader> = match self.reader_type.unwrap() {
             ReaderType::NoOp => Box::new(NoOpHandler),
         };
 

@@ -1,12 +1,29 @@
 use crate::set_some_builder_field;
-use std::io::{Error, Result};
+use std::{
+    fs::File,
+    io::{Error, Result, Write},
+};
 
 /// Writer *writes* data from storaged onto disk.
 pub struct Writer {
-    file_name: String,
     chunk_size: u16,
     process_async: bool,
     chunks_per_file: usize,
+    file: File,
+}
+
+impl Writer {
+    pub fn write(&mut self, bytes: &[u8]) -> Result<usize> {
+        if bytes.len() > self.chunk_size.into() {
+            return Err(Error::new(
+                std::io::ErrorKind::InvalidInput,
+                "Provided number of bytes exceed maximum chunk length",
+            ));
+        }
+
+        let bytes_written = self.file.write(bytes)?;
+        Ok(bytes_written)
+    }
 }
 
 pub struct WriterBuilder {
@@ -30,6 +47,12 @@ impl WriterBuilder {
     set_some_builder_field!(chunk_size, u16);
     set_some_builder_field!(process_async, bool);
     set_some_builder_field!(chunks_per_file, usize);
+
+    #[inline]
+    fn open_file(&self) -> Result<File> {
+        let file = File::create(self.file_name.as_ref().unwrap())?;
+        Ok(file)
+    }
 
     pub fn build(self) -> Result<Writer> {
         // Cannot have an empty file name
@@ -67,11 +90,13 @@ impl WriterBuilder {
             }
         }
 
+        let file = self.open_file()?;
+
         Ok(Writer {
-            file_name: self.file_name.unwrap(),
             chunk_size: self.chunk_size.unwrap(),
             process_async: self.process_async.unwrap_or(false),
             chunks_per_file: self.chunks_per_file.unwrap_or(64),
+            file,
         })
     }
 }
