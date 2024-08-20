@@ -2,5 +2,12 @@
 name = "storaged"
 version = "0.1.0"
 edition = "2021"
+default-run = "storaged"
+
+[[bin]]
+name = "playground"
+path = "src/bin/playground.rs"
 
 [dependencies]
+rand = "0.8.5"
+tokio = { version = "1", features = ["full"] }
